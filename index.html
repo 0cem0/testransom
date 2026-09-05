@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bureau</title>
+    <style>
+        /* Base et Bureau */
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background: url('https://w.wallhaven.cc/full/ex/wallhaven-ex9wvo.jpg') center/cover no-repeat;
+            background-color: #0078D7; /* Fallback Windows Blue */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* Barre des tâches */
+        .taskbar {
+            position: absolute; bottom: 0; width: 100%; height: 40px;
+            background: rgba(10, 10, 10, 0.85); backdrop-filter: blur(5px);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex; align-items: center; padding: 0 10px; z-index: 50;
+        }
+        .start-btn {
+            width: 30px; height: 30px; background: #0078D7; border-radius: 4px; margin-right: 15px;
+        }
+
+        /* Icônes de bureau */
+        .desktop-icons {
+            display: flex; flex-direction: column; flex-wrap: wrap;
+            height: calc(100% - 40px); padding: 10px; gap: 15px;
+        }
+        .icon {
+            width: 70px; display: flex; flex-direction: column; align-items: center; cursor: pointer;
+        }
+        .icon-img {
+            width: 40px; height: 40px; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.5); border-radius: 5px; margin-bottom: 5px;
+        }
+        .icon-text {
+            color: white; font-size: 11px; text-shadow: 1px 1px 2px black; text-align: center;
+        }
+
+        /* Fenêtres d'Erreur (Pop-ups) */
+        .error-window {
+            position: absolute; width: 300px; background: #f0f0f0;
+            border: 1px solid #000; box-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+            z-index: 100;
+        }
+        .error-header {
+            background: #fff; padding: 5px 10px; display: flex; justify-content: space-between;
+            font-size: 12px; font-weight: bold; border-bottom: 1px solid #ccc;
+        }
+        .error-close {
+            color: white; background: #e81123; padding: 0 5px; cursor: pointer;
+        }
+        .error-body {
+            padding: 15px; display: flex; align-items: center; gap: 15px; font-size: 13px;
+        }
+        .error-icon {
+            color: red; font-size: 24px; font-weight: bold;
+        }
+
+        /* Overlay d'Infection et Glitch du Bureau */
+        #glitch-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 900;
+            opacity: 0; transition: opacity 0.5s;
+            background: rgba(255, 0, 0, 0.1);
+            mix-blend-mode: overlay;
+        }
+
+        .screen-glitch {
+            animation: rgb-split 0.1s infinite, shake 0.2s infinite;
+        }
+
+        /* Le Monstre (Jumpscare / Prise de contrôle) */
+        #monster-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: black; z-index: 9999;
+            display: none; justify-content: center; align-items: center;
+        }
+        #monster-img {
+            max-width: 100vw; max-height: 100vh;
+            animation: monster-glitch 0.1s infinite;
+        }
+
+        /* Animations CSS */
+        @keyframes rgb-split {
+            0% { text-shadow: 2px 0 red, -2px 0 blue; }
+            50% { text-shadow: -2px 0 red, 2px 0 blue; }
+            100% { text-shadow: 2px 0 red, -2px 0 blue; }
+        }
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            25% { transform: translate(-2px, -2px) rotate(-1deg); }
+            50% { transform: translate(2px, 2px) rotate(1deg); }
+            75% { transform: translate(-1px, 1px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+        @keyframes monster-glitch {
+            0% { transform: scale(1) translate(0px, 0px); filter: contrast(150%) hue-rotate(0deg); }
+            25% { transform: scale(1.1) translate(-10px, 15px); filter: contrast(200%) hue-rotate(90deg) invert(20%); }
+            50% { transform: scale(0.9) translate(15px, -10px); filter: contrast(100%) hue-rotate(-90deg); }
+            75% { transform: scale(1.05) translate(-15px, -15px); filter: contrast(300%) invert(80%); }
+            100% { transform: scale(1) translate(0px, 0px); filter: contrast(150%) hue-rotate(0deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Faux Bureau -->
+    <div class="desktop-icons">
+        <div class="icon"><div class="icon-img"></div><div class="icon-text">Corbeille</div></div>
+        <div class="icon"><div class="icon-img"></div><div class="icon-text">Valorant.lnk</div></div>
+        <div class="icon"><div class="icon-img"></div><div class="icon-text">Roblox</div></div>
+        <div class="icon"><div class="icon-img"></div><div class="icon-text">Script_Horror.txt</div></div>
+        <div class="icon"><div class="icon-img"></div><div class="icon-text">Cours_OSI.pdf</div></div>
+    </div>
+    <div class="taskbar"><div class="start-btn"></div></div>
+
+    <!-- Conteneur pour les pop-ups générés par JS -->
+    <div id="popups-container"></div>
+
+    <!-- Glitch global -->
+    <div id="glitch-overlay"></div>
+
+    <!-- L'entité -->
+    <div id="monster-container">
+        <img id="monster-img" src="ransom_idle.png" alt="Entity">
+    </div>
+
+    <script>
+        const popupsContainer = document.getElementById('popups-container');
+        const glitchOverlay = document.getElementById('glitch-overlay');
+        const monsterContainer = document.getElementById('monster-container');
+        const monsterImg = document.getElementById('monster-img');
+        const body = document.body;
+
+        // Fichiers du monstre fournis
+        const entityFrames = [
+            'ransom_idle.png',
+            'ransom_random.png',
+            'ransom_attack.png'
+        ];
+
+        // Messages d'erreur flippants
+        const errorMessages = [
+            "Fichier système manquant ou corrompu.",
+            "Accès refusé. Ils te regardent.",
+            "Erreur fatale : 0x00000000A90",
+            "Impossible d'arrêter le processus.",
+            "Il est déjà là.",
+            "POURQUOI AS-TU OUVERT ÇA ?"
+        ];
+
+        // Générateur de pop-ups
+        function spawnPopup() {
+            const popup = document.createElement('div');
+            popup.className = 'error-window';
+            
+            // Position aléatoire sur l'écran
+            const x = Math.random() * (window.innerWidth - 300);
+            const y = Math.random() * (window.innerHeight - 150);
+            popup.style.left = `${x}px`;
+            popup.style.top = `${y}px`;
+
+            const msg = errorMessages[Math.floor(Math.random() * errorMessages.length)];
+
+            popup.innerHTML = `
+                <div class="error-header">
+                    <span>Erreur Système</span>
+                    <span class="error-close">X</span>
+                </div>
+                <div class="error-body">
+                    <span class="error-icon">❌</span>
+                    <span>${msg}</span>
+                </div>
+            `;
+            popupsContainer.appendChild(popup);
+            
+            // Bruit système facultatif (souvent bloqué par les navigateurs sans interaction préalable, donc on simule visuellement)
+        }
+
+        // Chronologie de l'attaque
+        let popupsInterval;
+        
+        // 1. Démarrage lent des erreurs (après 2 secondes)
+        setTimeout(() => {
+            spawnPopup();
+            
+            // 2. Les erreurs s'accélèrent
+            let speed = 800;
+            const accelerate = () => {
+                spawnPopup();
+                speed = speed * 0.8; // De plus en plus rapide
+                if (speed > 50) {
+                    popupsInterval = setTimeout(accelerate, speed);
+                } else {
+                    // 3. Déclenchement du Glitch de l'écran entier
+                    body.classList.add('screen-glitch');
+                    glitchOverlay.style.opacity = '1';
+                    
+                    // Bombardement final de pop-ups
+                    setInterval(spawnPopup, 20);
+
+                    // 4. Apparition du monstre (après 8 secondes totales environ)
+                    setTimeout(triggerMonster, 2500);
+                }
+            };
+            popupsInterval = setTimeout(accelerate, speed);
+            
+        }, 2000);
+
+        // 5. Phase finale : Le monstre prend tout l'écran
+        function triggerMonster() {
+            monsterContainer.style.display = 'flex';
+            
+            // Alternance violente des 3 images
+            setInterval(() => {
+                const randomFrame = entityFrames[Math.floor(Math.random() * entityFrames.length)];
+                monsterImg.src = randomFrame;
+                
+                // Effet de zoom stroboscopique
+                if(Math.random() > 0.5) {
+                    monsterContainer.style.backgroundColor = (Math.random() > 0.5) ? 'black' : '#300000';
+                }
+            }, 80); // Changement toutes les 80ms
+        }
+    </script>
+</body>
+</html>
